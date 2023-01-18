@@ -1,0 +1,9 @@
+name = "TaylorInversion"
+uuid = "b52af375-caae-415f-bfb3-e49a502a248a"
+authors = ["KeithWM <keith@myerscough.nl>"]
+version = "0.1.0"
+
+[deps]
+SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
+TaylorSeries = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
