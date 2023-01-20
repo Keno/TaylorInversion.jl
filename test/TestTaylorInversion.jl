@@ -25,12 +25,12 @@ function reference(a::Taylor1)
     return Taylor1([0; A], order)
 end
 
-@testset "Testing for n=$n" for n in 1:4
+@testset "Testing for n=$n" for n in 1:7
     f = TaylorInversion.create_expressions(n)
     @testset verbose = false "Testing various random values for a" begin
         @testset "Random number $i_exp" for i_exp in 1:10
             a = randn(n)
-            @test f([a]) == reference(a)
+            @test isapprox(f([a]), reference(a))
         end
     end
 end
