@@ -3,6 +3,18 @@ using Symbolics: @variables, @acrule, @rule
 using Symbolics: Arr, Num, Chain, Fixpoint, Prewalk
 using Symbolics: build_function, solve_for, expand, simplify, substitute
 
+struct InverseTaylor{N}
+    a::Arr{Num,1}
+    A::Arr{Num,1}
+    z::Num
+    B::Vector{Num}
+    function InverseTaylor{N}() where {N}
+        @variables z, a[1:N], A[1:N]
+        B = zeros(Num, N)
+        new(a, A, z, B)
+    end
+end
+
 function truncaterule(n, z)
     r = @acrule (~~a + ~b * (~z)^(~n::(m -> m > n))) => sum(~~a)
     rf = @acrule (~b * (~z)^(~n::(m -> m > n))) => 0
@@ -57,5 +69,7 @@ function create_expressions(n::Int)
     f = build_function(B, [a])[1] |> eval
     return f
 end
+
+export InverseTaylor
 
 end # module TaylorInversion

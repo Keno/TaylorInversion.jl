@@ -25,6 +25,10 @@ function reference(a::Taylor1)
     return Taylor1([0; A], order)
 end
 
+@testset "Test object creation for n=$n" for n in 1:3
+    @test isa(InverseTaylor{n}(), InverseTaylor)
+end
+
 @testset "Test for n=$n" for n in 1:7
     @time f = TaylorInversion.create_expressions(n)
     @testset verbose = false "Testing various random values for a" begin
