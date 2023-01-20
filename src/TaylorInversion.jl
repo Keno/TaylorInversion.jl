@@ -1,6 +1,6 @@
 module TaylorInversion
 using Symbolics: @variables, @acrule, @rule
-using Symbolics: Num, Chain, Fixpoint, Prewalk
+using Symbolics: Arr, Num, Chain, Fixpoint, Prewalk
 using Symbolics: build_function, solve_for, expand, simplify, substitute
 
 function truncaterule(n, z)
@@ -10,19 +10,15 @@ function truncaterule(n, z)
 end
 
 function truncatedpower(A, z, k::Int, truncrule)
-    @show single = mapreduce(kAn -> kAn[2] * z^kAn[1], +, enumerate(A))
-    @show result = single
+    single = mapreduce(kAn -> kAn[2] * z^kAn[1], +, enumerate(A))
+    result = single
     for kk in 2:k
-        @show result = simplify(
+        result = simplify(
             result * single |> expand;
             rewriter=truncrule
         )
     end
     return result
-end
-
-function truncatedpower(A, z, k::Int)
-    return mapreduce(kAn -> kAn[2] * z^kAn[1], +, enumerate(A))^k
 end
 
 function process(kan, A, truncrule, z)
@@ -34,18 +30,21 @@ function process(kan, A, truncrule, z)
     )
 end
 
-function create_expressions(n::Int)
-    @variables x, y, z, a[1:n], A[1:n]
-    B = zeros(Num, n)
-
+function initial_substitution(n::Int, a::Arr{Num,1}, A::Arr{Num,1}, z::Num)
     truncrule = truncaterule(n, z)
-
     subbed = mapreduce(kan -> process(kan, A, truncrule, z), +, enumerate(a)) |> expand
 
     subz = substitute(subbed, Dict(z => 0))
     subz == 0 || error("Function should be at least linear in z")
 
-    # fp = getfp()
+    return subbed
+end
+
+function create_expressions(n::Int)
+    @variables z, a[1:n], A[1:n]
+    subbed = initial_substitution(n, a, A, z)
+
+    B = zeros(Num, n)
     for i in 1:n
         @info "Expanding term $i to create ivnersion expression"
         divided = simplify(subbed / z)
@@ -56,7 +55,6 @@ function create_expressions(n::Int)
     end
 
     f = build_function(B, [a])[1] |> eval
-    @show B
     return f
 end
 
