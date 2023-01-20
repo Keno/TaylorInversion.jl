@@ -21,10 +21,10 @@ function truncaterule(n, z)
     return Fixpoint(Prewalk(Chain([r, rf])))
 end
 
-function truncatedpower(A, z, k::Int, truncrule)
-    single = mapreduce(kAn -> kAn[2] * z^kAn[1], +, enumerate(A))
+function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint)
+    single = mapreduce(kAn -> kAn[2] * it.z^kAn[1], +, enumerate(it.A))
     result = single
-    for kk in 2:k
+    for _ in 2:k
         result = simplify(
             result * single |> expand;
             rewriter=truncrule
@@ -33,40 +33,42 @@ function truncatedpower(A, z, k::Int, truncrule)
     return result
 end
 
-function process(kan, A, truncrule, z)
-    k, an = kan
-    t = an * truncatedpower(A, z, k, truncrule)
+function process(k::Int, an::Num, it::InverseTaylor, truncrule::Fixpoint)
+    t = an * truncatedpower(it, k, truncrule)
     return simplify(
         t |> expand;
         rewriter=truncrule
     )
 end
 
-function initial_substitution(n::Int, a::Arr{Num,1}, A::Arr{Num,1}, z::Num)
-    truncrule = truncaterule(n, z)
-    subbed = mapreduce(kan -> process(kan, A, truncrule, z), +, enumerate(a)) |> expand
+function initial_substitution(it::InverseTaylor{N}) where {N}
+    truncrule = truncaterule(N, it.z)
+    subbed = mapreduce(kan -> process(kan..., it, truncrule), +, enumerate(it.a)) |> expand
 
-    subz = substitute(subbed, Dict(z => 0))
+    subz = substitute(subbed, Dict(it.z => 0))
     subz == 0 || error("Function should be at least linear in z")
 
     return subbed
 end
 
-function create_expressions(n::Int)
-    @variables z, a[1:n], A[1:n]
-    subbed = initial_substitution(n, a, A, z)
-
-    B = zeros(Num, n)
-    for i in 1:n
+function further_substitution(it::InverseTaylor{N}, subbed::Num) where {N}
+    for i in 1:N
         @info "Expanding term $i to create ivnersion expression"
-        divided = simplify(subbed / z)
-        subz = substitute(divided, Dict(z => 0))
-        B[i] = solve_for(subz ~ i == 1 ? 1 : 0, A[i]) |> simplify
+        divided = simplify(subbed / it.z)
+        subz = substitute(divided, Dict(it.z => 0))
+        it.B[i] = solve_for(subz ~ i == 1 ? 1 : 0, it.A[i]) |> simplify
 
-        subbed = substitute(divided - subz, Dict(A[i] => B[i]))
+        subbed = substitute(divided - subz, Dict(it.A[i] => it.B[i]))
     end
+    return subbed
+end
 
-    f = build_function(B, [a])[1] |> eval
+function create_expressions(n::Int)
+    it = InverseTaylor{n}()
+    subbed = initial_substitution(it)
+    subbed = further_substitution(it, subbed)
+
+    f = build_function(it.B, [it.a])[1] |> eval  # [1] because build function also provided an in-place version in [2]
     return f
 end
 
