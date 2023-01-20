@@ -25,7 +25,7 @@ function reference(a::Taylor1)
     return Taylor1([0; A], order)
 end
 
-@testset "Testing for n=$n" for n in 1:7
+@testset "Test for n=$n" for n in 1:7
     f = TaylorInversion.create_expressions(n)
     @testset verbose = false "Testing various random values for a" begin
         @testset "Random number $i_exp" for i_exp in 1:10
@@ -35,5 +35,8 @@ end
     end
 end
 
+@testset "Benchmark for n=$n" for n in 1:6
+    @time f = TaylorInversion.create_expressions(n)
+end
 
 end  # module TestTaylorInversion
