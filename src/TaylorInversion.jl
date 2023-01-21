@@ -1,4 +1,5 @@
 module TaylorInversion
+using TaylorSeries: Taylor1
 using Symbolics: @variables, @acrule, @rule
 using Symbolics: Arr, Num, Chain, Fixpoint, Prewalk
 using Symbolics: build_function, solve_for, expand, simplify, substitute
@@ -14,6 +15,26 @@ struct InverseTaylor{N}
         new(a, A, z, B)
     end
 end
+
+struct TaylorInverter{N}
+    f::Function
+end
+
+function TaylorInverter{N}() where {N}
+    f = create_expressions(N)
+    return TaylorInverter{N}(f)
+end
+
+function invert(ti::TaylorInverter, a::Vector)
+    return ti.f([a])
+end
+
+function invert(ti::TaylorInverter, taylor1::Taylor1)
+    order = taylor1.order
+    a = taylor1.coeffs[2:end]
+    return Taylor1([0; ti.f([a])], order)
+end
+
 
 function truncaterule(n, z)
     r = @acrule (~~a + ~b * (~z)^(~n::(m -> m > n))) => sum(~~a)
@@ -72,6 +93,6 @@ function create_expressions(n::Int)
     return f
 end
 
-export InverseTaylor
+export TaylorInverter, invert
 
 end # module TaylorInversion
