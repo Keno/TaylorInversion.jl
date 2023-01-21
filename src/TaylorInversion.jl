@@ -35,7 +35,6 @@ function invert(ti::TaylorInverter, taylor1::Taylor1)
     return Taylor1([0; ti.f([a])], order)
 end
 
-
 function truncaterule(n, z)
     r = @acrule (~~a + ~b * (~z)^(~n::(m -> m > n))) => sum(~~a)
     rf = @acrule (~b * (~z)^(~n::(m -> m > n))) => 0

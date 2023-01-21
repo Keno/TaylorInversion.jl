@@ -19,6 +19,7 @@ end
 @testset verbose = false "Test Taylor1 self-consistency" begin
     @testset "Random number $i_exp" for i_exp in 1:1
         taylor1 = rand(Taylor1, n)
+        taylor1.coeffs[1] = 0  # the inversion of the Taylor Series is agnostic of x0, y0.
         @test isapprox(invert(ti, invert(ti, taylor1)), taylor1)
     end
 end
