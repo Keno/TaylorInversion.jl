@@ -1,6 +1,7 @@
 module TestTaylorInversion
 using ReTest
 using TaylorSeries
+import Base.isapprox
 
 using TaylorInversion
 

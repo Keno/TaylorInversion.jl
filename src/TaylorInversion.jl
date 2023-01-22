@@ -32,7 +32,8 @@ end
 function invert(ti::TaylorInverter, taylor1::Taylor1)
     order = taylor1.order
     a = taylor1.coeffs[2:end]
-    return Taylor1([0; ti.f([a])], order)
+    substitution = Taylor1([-taylor1.coeffs[begin], 1], order)
+    return Taylor1([0; ti.f([a])], order)(substitution)
 end
 
 function truncaterule(n, z)
@@ -88,8 +89,8 @@ function create_expressions(n::Int)
     subbed = initial_substitution(it)
     subbed = further_substitution(it, subbed)
 
-    f = build_function(it.B, [it.a])[1] |> eval  # [1] because build function also provided an in-place version in [2]
-    return f
+    f = build_function(it.B, [it.a])[1]  # [1] because build function also provided an in-place version in [2]
+    return eval(f)
 end
 
 export TaylorInverter, invert

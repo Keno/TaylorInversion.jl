@@ -1,7 +1,9 @@
 using ReTest
 
 using TaylorInversion
-@show push!(LOAD_PATH, @__DIR__)
-using TestTaylorInversion
+# (@__DIR__) in LOAD_PATH || push!(LOAD_PATH, @__DIR__)
+# @show LOAD_PATH
+include("TestTaylorInversion.jl")
+# using TestTaylorInversion
 
 retest(TaylorInversion, TestTaylorInversion)

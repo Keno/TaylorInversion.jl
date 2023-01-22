@@ -18,3 +18,8 @@ function reference(a::Taylor1)
     order = length(A)
     return Taylor1([0; A], order)
 end
+
+taylor_inverters = Dict{Int64,TaylorInverter}()
+function get_taylor_inverter(n::Int)
+    return get(taylor_inverters, n, TaylorInverter{n}())
+end
