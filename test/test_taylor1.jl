@@ -20,7 +20,7 @@ end
 @testset verbose = false "Test Taylor1 self-consistency" begin
     n = 3
     ti = get_taylor_inverter(n)
-    @testset "Random number $i_exp" for i_exp in 1:1
+    @testset "Random number $i_exp" for i_exp in 1:10
         taylor1 = rand(Taylor1, n)
         taylor1.coeffs[1] = 0  # the inversion of the Taylor Series is agnostic of x0, y0.
         @test isapprox(invert(ti, invert(ti, taylor1)), taylor1)
@@ -41,7 +41,7 @@ end
     end
 end
 
-@testset verbose = false "Test Taylor1 a" begin
+@testset "Test Taylor1 linear" begin
     n = 3
     ti = get_taylor_inverter(n)
     c, b = 1, 1
@@ -49,5 +49,5 @@ end
     invtaylor1 = invert(ti, taylor1)
     refs = 0:0.01:0.2
     samples = taylor1.(refs)
-    @test isapprox(invtaylor1.(samples), refs; rtol=1.e-2)
+    @test isapprox(invtaylor1.(samples), refs; atol=1.e-15)
 end

@@ -14,9 +14,11 @@ function reference(a_trunc::Vector{<:Number})
 end
 
 function reference(a::Taylor1)
-    A = reference(a.coeffs[2:end])
+    order = length(a.coeffs) - 1
+    A = reference(a.coeffs[begin+1:end])
+    offset = Taylor1([a.coeffs[begin], 1], order)
     order = length(A)
-    return Taylor1([0; A], order)
+    return Taylor1([0; A], order)(offset)
 end
 
 taylor_inverters = Dict{Int64,TaylorInverter}()
