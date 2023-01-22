@@ -7,3 +7,4 @@ include("TestTaylorInversion.jl")
 # using TestTaylorInversion
 
 retest(TaylorInversion, TestTaylorInversion)
+retest("Truncatedpower time")

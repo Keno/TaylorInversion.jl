@@ -42,7 +42,7 @@ function truncaterule(n, z)
     return Fixpoint(Prewalk(Chain([r, rf])))
 end
 
-function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint)
+function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint, ::Val{:baseline})
     single = mapreduce(kAn -> kAn[2] * it.z^kAn[1], +, enumerate(it.A))
     result = single
     for _ in 2:k
@@ -50,6 +50,32 @@ function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint)
             result * single |> expand;
             rewriter=truncrule
         )
+    end
+    return result
+end
+
+function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint)
+    j = 0
+    entry = mapreduce(kAn -> kAn[2] * it.z^kAn[1], +, enumerate(it.A))
+    d = Dict(j => entry)
+    while 2 * 2^j <= k
+        j = j + 1
+        entry = simplify(
+            entry * entry |> expand;
+            rewriter=truncrule
+        )
+        d[j] = entry
+    end
+    result = d[j]
+    k = k - 2^j
+    for i in j-1:-1:0
+        if 2^i <= k
+            result = simplify(
+                result * d[i] |> expand;
+                rewriter=truncrule
+            )
+            k = k - 2^i
+        end
     end
     return result
 end
@@ -63,6 +89,7 @@ function process(k::Int, an::Num, it::InverseTaylor, truncrule::Fixpoint)
 end
 
 function initial_substitution(it::InverseTaylor{N}) where {N}
+    @info "Intial substituion"
     truncrule = truncaterule(N, it.z)
     subbed = mapreduce(kan -> process(kan..., it, truncrule), +, enumerate(it.a)) |> expand
 
