@@ -1,4 +1,5 @@
 module TaylorInversion
+using TaylorSeries: Taylor1
 using Symbolics: @variables, @acrule, @rule
 using Symbolics: Arr, Num, Chain, Fixpoint, Prewalk
 using Symbolics: build_function, solve_for, expand, simplify, substitute
@@ -15,13 +16,33 @@ struct InverseTaylor{N}
     end
 end
 
+struct TaylorInverter{N}
+    f::Function
+end
+
+function TaylorInverter{N}() where {N}
+    f = create_expressions(N)
+    return TaylorInverter{N}(f)
+end
+
+function invert(ti::TaylorInverter, a::Vector)
+    return ti.f([a])
+end
+
+function invert(ti::TaylorInverter, taylor1::Taylor1)
+    order = taylor1.order
+    a = taylor1.coeffs[2:end]
+    substitution = Taylor1([-taylor1.coeffs[begin], 1], order)
+    return Taylor1([0; ti.f([a])], order)(substitution)
+end
+
 function truncaterule(n, z)
     r = @acrule (~~a + ~b * (~z)^(~n::(m -> m > n))) => sum(~~a)
     rf = @acrule (~b * (~z)^(~n::(m -> m > n))) => 0
     return Fixpoint(Prewalk(Chain([r, rf])))
 end
 
-function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint)
+function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint, ::Val{:baseline})
     single = mapreduce(kAn -> kAn[2] * it.z^kAn[1], +, enumerate(it.A))
     result = single
     for _ in 2:k
@@ -29,6 +50,32 @@ function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint)
             result * single |> expand;
             rewriter=truncrule
         )
+    end
+    return result
+end
+
+function truncatedpower(it::InverseTaylor, k::Int, truncrule::Fixpoint)
+    j = 0
+    entry = mapreduce(kAn -> kAn[2] * it.z^kAn[1], +, enumerate(it.A))
+    d = Dict(j => entry)
+    while 2 * 2^j <= k
+        j = j + 1
+        entry = simplify(
+            entry * entry |> expand;
+            rewriter=truncrule
+        )
+        d[j] = entry
+    end
+    result = d[j]
+    k = k - 2^j
+    for i in j-1:-1:0
+        if 2^i <= k
+            result = simplify(
+                result * d[i] |> expand;
+                rewriter=truncrule
+            )
+            k = k - 2^i
+        end
     end
     return result
 end
@@ -42,6 +89,7 @@ function process(k::Int, an::Num, it::InverseTaylor, truncrule::Fixpoint)
 end
 
 function initial_substitution(it::InverseTaylor{N}) where {N}
+    @info "Intial substituion"
     truncrule = truncaterule(N, it.z)
     subbed = mapreduce(kan -> process(kan..., it, truncrule), +, enumerate(it.a)) |> expand
 
@@ -68,10 +116,10 @@ function create_expressions(n::Int)
     subbed = initial_substitution(it)
     subbed = further_substitution(it, subbed)
 
-    f = build_function(it.B, [it.a])[1] |> eval  # [1] because build function also provided an in-place version in [2]
-    return f
+    f = build_function(it.B, [it.a])[1]  # [1] because build function also provided an in-place version in [2]
+    return eval(f)
 end
 
-export InverseTaylor
+export TaylorInverter, invert
 
 end # module TaylorInversion

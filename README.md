@@ -1,0 +1,1 @@
+Based on [Weisstein, Eric W.](https://mathworld.wolfram.com/about/author.html) "Series Reversion." From [MathWorld](https://mathworld.wolfram.com/)--A Wolfram Web Resource. https://mathworld.wolfram.com/SeriesReversion.html
