@@ -16,24 +16,17 @@ struct InverseTaylor{N}
     end
 end
 
-struct TaylorInverter{N}
-    f::Function
-end
-
-function TaylorInverter{N}() where {N}
-    f = create_expressions(N)
-    return TaylorInverter{N}(f)
-end
+struct TaylorInverter{N}; end
 
 function invert(ti::TaylorInverter, a::Vector)
-    return ti.f([a])
+    return ti([a])
 end
 
 function invert(ti::TaylorInverter, taylor1::Taylor1)
     order = taylor1.order
     a = taylor1.coeffs[2:end]
     substitution = Taylor1([-taylor1.coeffs[begin], 1], order)
-    return Taylor1([0; ti.f([a])], order)(substitution)
+    return Taylor1([0; ti([a])], order)(substitution)
 end
 
 function truncaterule(n, z)
@@ -89,7 +82,6 @@ function process(k::Int, an::Num, it::InverseTaylor, truncrule::Fixpoint)
 end
 
 function initial_substitution(it::InverseTaylor{N}) where {N}
-    @info "Intial substituion"
     truncrule = truncaterule(N, it.z)
     subbed = mapreduce(kan -> process(kan..., it, truncrule), +, enumerate(it.a)) |> expand
 
@@ -101,7 +93,6 @@ end
 
 function further_substitution(it::InverseTaylor{N}, subbed::Num) where {N}
     for i in 1:N
-        @info "Expanding term $i to create ivnersion expression"
         divided = simplify(subbed / it.z)
         subz = substitute(divided, Dict(it.z => 0))
         it.B[i] = solve_for(subz ~ i == 1 ? 1 : 0, it.A[i]) |> simplify
@@ -111,13 +102,14 @@ function further_substitution(it::InverseTaylor{N}, subbed::Num) where {N}
     return subbed
 end
 
-function create_expressions(n::Int)
-    it = InverseTaylor{n}()
+@generated function (::TaylorInverter{N})(var"ˍ₋arg1") where {N}
+    it = InverseTaylor{N}()
     subbed = initial_substitution(it)
     subbed = further_substitution(it, subbed)
 
-    f = build_function(it.B, [it.a])[1]  # [1] because build function also provided an in-place version in [2]
-    return eval(f)
+    fdef = build_function(it.B, [it.a])[1]  # [1] because build function also provided an in-place version in [2]
+    fbody = fdef.args[2]
+    return fbody
 end
 
 export TaylorInverter, invert
